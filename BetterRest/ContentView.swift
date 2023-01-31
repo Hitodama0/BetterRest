@@ -8,6 +8,21 @@
 import CoreML
 import SwiftUI
 
+struct Title: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.largeTitle)
+            .foregroundColor(.blue)
+    }
+}
+
+extension View {
+    func titleStyle() -> some View {
+        modifier(Title())
+    }
+}
+
+
 struct ContentView: View {
     @State private var sleepAmount = 8.0
     @State private var wakeUp = defaultWakeTime
@@ -23,6 +38,23 @@ struct ContentView: View {
         return Calendar.current.date(from: components) ?? Date.now
     }
     
+    var bedTime: String {
+        do {
+            let config = MLModelConfiguration()
+            let model = try SleepCalculator(configuration: config)
+            
+            let components = Calendar.current.dateComponents([.hour, .minute], from: wakeUp)
+            let hour = (components.hour ?? 0) * 60 * 60
+            let minute = (components.minute ?? 0) * 60
+            let prediction = try model.prediction(wake: Double(hour + minute), estimatedSleep: sleepAmount, coffee: Double(coffeeAmount))
+            let sleepTime = wakeUp - prediction.actualSleep
+            var bedtime = sleepTime.formatted(date: .omitted, time: .shortened)
+            return bedtime
+        } catch {
+            var bedtime = "Sorry, there was a problem calculating your bedtime."
+            return bedtime
+        }
+    }
     
     var body: some View {
         NavigationView{
@@ -49,39 +81,45 @@ struct ContentView: View {
                         ForEach(1 ..< 21) {
                             Text("\($0)")
                         }
-                        Text(alertMessage)
                     }
+                }
+                VStack(alignment: .leading){
+                    Text("Your ideal bedtime is: ")
+                        .font(.headline)
+                    Text(bedTime)
+                        .titleStyle()
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
             .navigationTitle("BetterRest")
-            .toolbar {
-                Button("Calculate", action: calculateBedtime)
-            }
-            .alert(alertTitle, isPresented: $showingAlert) {
-                Button("OK") { }
-            } message: {
-                Text(alertMessage)
-            }
+            /* .toolbar {
+             Button("Calculate", action: calculateBedtime)
+             }
+             .alert(alertTitle, isPresented: $showingAlert) {
+             Button("OK") { }
+             } message: {
+             Text(alertMessage)
+             }*/
         }
     }
-    func calculateBedtime() {
-        do {
-            let config = MLModelConfiguration()
-            let model = try SleepCalculator(configuration: config)
-            
-            let components = Calendar.current.dateComponents([.hour, .minute], from: wakeUp)
-            let hour = (components.hour ?? 0) * 60 * 60
-            let minute = (components.minute ?? 0) * 60
-            let prediction = try model.prediction(wake: Double(hour + minute), estimatedSleep: sleepAmount, coffee: Double(coffeeAmount))
-            let sleepTime = wakeUp - prediction.actualSleep
-            alertTitle = "Your ideal bedtime is…"
-            alertMessage = sleepTime.formatted(date: .omitted, time: .shortened)
-        } catch {
-            alertTitle = "Error"
-            alertMessage = "Sorry, there was a problem calculating your bedtime."
-        }
-        showingAlert = true
-    }
+    /*func calculateBedtime() {
+     do {
+     let config = MLModelConfiguration()
+     let model = try SleepCalculator(configuration: config)
+     
+     let components = Calendar.current.dateComponents([.hour, .minute], from: wakeUp)
+     let hour = (components.hour ?? 0) * 60 * 60
+     let minute = (components.minute ?? 0) * 60
+     let prediction = try model.prediction(wake: Double(hour + minute), estimatedSleep: sleepAmount, coffee: Double(coffeeAmount))
+     let sleepTime = wakeUp - prediction.actualSleep
+     alertTitle = "Your ideal bedtime is…"
+     alertMessage = sleepTime.formatted(date: .omitted, time: .shortened)
+     } catch {
+     alertTitle = "Error"
+     alertMessage = "Sorry, there was a problem calculating your bedtime."
+     }
+     showingAlert = true
+     }*/
 }
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
