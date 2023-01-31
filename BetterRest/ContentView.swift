@@ -48,10 +48,10 @@ struct ContentView: View {
             let minute = (components.minute ?? 0) * 60
             let prediction = try model.prediction(wake: Double(hour + minute), estimatedSleep: sleepAmount, coffee: Double(coffeeAmount))
             let sleepTime = wakeUp - prediction.actualSleep
-            var bedtime = sleepTime.formatted(date: .omitted, time: .shortened)
+            let bedtime = sleepTime.formatted(date: .omitted, time: .shortened)
             return bedtime
         } catch {
-            var bedtime = "Sorry, there was a problem calculating your bedtime."
+            let bedtime = "Sorry, there was a problem calculating your bedtime."
             return bedtime
         }
     }
